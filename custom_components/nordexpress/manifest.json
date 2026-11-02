@@ -1,0 +1,11 @@
+{
+  "domain": "nordexpress",
+  "name": "Nord Express",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://nordexpress.kiedyprzyjedzie.pl/",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}

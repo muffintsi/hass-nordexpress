@@ -1,0 +1,62 @@
+{
+  "title": "Nord Express",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Stop",
+        "description": "Choose a Nord Express stop.",
+        "data": {
+          "stop_id": "Stop"
+        }
+      },
+      "line": {
+        "title": "Line",
+        "data": {
+          "line": "Line"
+        }
+      },
+      "direction": {
+        "title": "Destination",
+        "description": "Choose the exact destination. Route variants have separate schedules.",
+        "data": {
+          "direction": "Destination"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot fetch Nord Express data. Please retry.",
+      "invalid_selection": "Choose an item from the list.",
+      "no_lines": "No lines in the next 7 days.",
+      "no_departures": "No departures in the next 7 days."
+    },
+    "abort": {
+      "already_configured": "This stop, line and destination are already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Timetable settings",
+        "data": {
+          "calendar_days": "Days in calendar"
+        }
+      }
+    },
+    "error": {
+      "invalid_calendar_days": "Enter a whole number from 1 to 14."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_departure": {
+        "name": "Next departure"
+      },
+      "following_departure": {
+        "name": "Following departure"
+      },
+      "minutes_until_departure": {
+        "name": "Minutes until departure"
+      }
+    }
+  }
+}
