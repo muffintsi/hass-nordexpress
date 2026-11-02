@@ -8,10 +8,12 @@ from nordexpress_test.const import validate_calendar_days
 from nordexpress_test.model import (
     WARSAW,
     configured_directions,
+    configured_routes,
     display_instant,
     instant,
     merge_live,
     normalize_directions,
+    route_identity,
     timetable,
     upcoming,
 )
@@ -48,6 +50,39 @@ def live(reference, **kwargs):
 
 
 class ModelTests(unittest.TestCase):
+    def test_routes_read_legacy_and_multiple_lines(self):
+        self.assertEqual(
+            configured_routes({"line": "105", "direction": "Główczyce"}), {"105": ("Główczyce",)}
+        )
+        self.assertEqual(
+            configured_routes({"routes": {"101": ["Izbica"], "105": ["Główczyce", "Cecenowo"]}}),
+            {"101": ("Izbica",), "105": ("Cecenowo", "Główczyce")},
+        )
+
+    def test_routes_options_override_legacy(self):
+        self.assertEqual(
+            configured_routes(
+                {"line": "105", "direction": "Główczyce"}, {"routes": {"101": ["Izbica"]}}
+            ),
+            {"101": ("Izbica",)},
+        )
+
+    def test_route_identity_preserves_legacy_line(self):
+        self.assertEqual(route_identity({"line": "105"}, "old-id", "105"), "old-id")
+        self.assertEqual(route_identity({"line": "105"}, "old-id", "101"), "old-id_101")
+
+    def test_new_route_identity_is_distinct_per_line_and_group(self):
+        self.assertNotEqual(
+            route_identity({}, "group-a", "105"), route_identity({}, "group-b", "105")
+        )
+        self.assertNotEqual(
+            route_identity({}, "group-a", "105"), route_identity({}, "group-a", "101")
+        )
+
+    def test_empty_routes_rejected(self):
+        with self.assertRaises(ValueError):
+            configured_routes({"routes": {}})
+
     def test_multiple_directions_are_sorted_together(self):
         day = date(2026, 11, 2)
         data = timetable(payload(36000), day, "105")

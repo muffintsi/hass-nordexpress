@@ -7,27 +7,27 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .model import WARSAW, instant
+from .model import WARSAW, instant, route_identity
 from .presentation import calendar_records
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([NordExpressCalendar(entry)])
+    async_add_entities(
+        [NordExpressCalendar(entry, coordinator) for coordinator in entry.runtime_data.values()]
+    )
 
 
 class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
     _attr_icon = "mdi:calendar"
 
-    def __init__(self, entry):
-        super().__init__(entry.runtime_data)
-        self._attr_unique_id = f"{entry.unique_id}_calendar"
-        self._attr_name = (
-            f"Linia {entry.data['line']} - {entry.data['stop_name']}"
-            f" → {self.coordinator.config['direction']} (Nord Express)"
-        )
+    def __init__(self, entry, coordinator):
+        super().__init__(coordinator)
+        line = coordinator.config["line"]
+        self._attr_unique_id = f"{route_identity(entry.data, entry.unique_id, line)}_calendar"
+        self._attr_name = f"Linia {line} - {entry.data['stop_name']}"
         self._attr_extra_state_attributes = {
             "calendar_days": self.coordinator.calendar_days,
-            "line": entry.data["line"],
+            "line": line,
             "latitude": entry.data.get("latitude"),
             "longitude": entry.data.get("longitude"),
             "stop_name": entry.data["stop_name"],

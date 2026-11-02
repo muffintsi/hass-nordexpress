@@ -10,13 +10,13 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import NordExpressApi, NordExpressError
 from .const import HORIZON_DAYS, POLL_SECONDS, validate_calendar_days
-from .model import WARSAW, configured_directions, instant, merge_live, timetable, upcoming
+from .model import WARSAW, configured_routes, instant, merge_live, timetable, upcoming
 
 LOGGER = logging.getLogger(__name__)
 
 
 class NordExpressCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, api: NordExpressApi, entry) -> None:
+    def __init__(self, hass: HomeAssistant, api: NordExpressApi, entry, line=None) -> None:
         super().__init__(
             hass,
             LOGGER,
@@ -25,9 +25,15 @@ class NordExpressCoordinator(DataUpdateCoordinator):
             config_entry=entry,
         )
         self.api = api
-        selected = configured_directions(entry.data, entry.options)
+        routes = configured_routes(entry.data, entry.options)
+        if line is None:
+            if len(routes) != 1:
+                raise ValueError("Specify a line for a multi-line entry")
+            line = next(iter(routes))
+        selected = routes[line]
         self.config = {
             **entry.data,
+            "line": line,
             "directions": list(selected),
             "direction": " / ".join(selected),
         }

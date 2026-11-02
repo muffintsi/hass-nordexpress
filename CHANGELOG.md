@@ -1,5 +1,22 @@
 # Zmiany
 
+## 0.3.0 — 2026-11-02
+
+- Wybór kilku linii po wskazaniu przystanku.
+- Kierunki wybierane oddzielnie dla każdej zaznaczonej linii.
+- Możliwość ponownego dodania tego samego przystanku i linii dla kierunku przeciwnego.
+- Jeden sensor i kalendarz na wybraną linię, kolejne kursy w atrybutach jak w ZIM.
+- Opcje pozwalające zmienić linie i kierunki z zachowaniem ID istniejących linii.
+- Automatyczne usunięcie zbędnych sensorów pomocniczych i encji odznaczonych linii.
+
+## 0.2.1 — 2026-11-02
+
+- Jeden sensor na wpis, zgodnie z prezentacją ZIM Słupsk.
+- Kolejny kurs w NextBusHour, NextBusTime i NextBusDirection.
+- Krótsze nazwy sensora i kalendarza: Linia 105 - Główczyce.
+- Automatyczne usunięcie wycofanych sensorów pomocniczych z rejestru HA.
+- Zachowanie identyfikatora głównej encji oraz obsługi wielu kierunków.
+
 ## 0.2.0 — 2026-11-02
 
 - Wybór kilku kierunków w jednej konfiguracji, np. Główczyce + Cecenowo dla 105.

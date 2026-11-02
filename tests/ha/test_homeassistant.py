@@ -15,7 +15,7 @@ async def test_config_flow(hass, api):
         result["flow_id"], {"stop_id": "1301410:1360673"}
     )
     assert result["step_id"] == "line"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"line": "105"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"lines": ["105"]})
     assert result["step_id"] == "direction"
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"directions": ["Słupsk"]}
@@ -32,7 +32,7 @@ async def test_duplicate_relation(hass, api, entry):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"stop_id": "1301410:1360673"}
     )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"line": "105"})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"lines": ["105"]})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"directions": ["Słupsk"]}
     )
@@ -46,7 +46,7 @@ async def test_platforms_calendar_options_and_unload(hass, api, entry):
     await hass.async_block_till_done()
     assert entry.state == ConfigEntryState.LOADED
     sensors = hass.states.async_all("sensor")
-    assert len(sensors) == 3
+    assert len(sensors) == 1
     main = next(state for state in sensors if "BusHour" in state.attributes)
     assert main.attributes["Direction"] == "Słupsk"
     assert main.attributes["BusHour"] in {"10:00", "11:00"}
@@ -74,6 +74,10 @@ async def test_platforms_calendar_options_and_unload(hass, api, entry):
     assert options["step_id"] == "init"
     options = await hass.config_entries.options.async_configure(
         options["flow_id"], {"calendar_days": 3}
+    )
+    assert options["step_id"] == "direction"
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"], {"directions": ["Słupsk"]}
     )
     assert options["type"] == FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()

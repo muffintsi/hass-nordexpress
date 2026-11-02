@@ -10,14 +10,15 @@
         }
       },
       "line": {
-        "title": "Linia",
+        "title": "Linie",
+        "description": "Zaznacz linie, dla których chcesz dodać sensory i kalendarze.",
         "data": {
-          "line": "Linia"
+          "lines": "Linie"
         }
       },
       "direction": {
-        "title": "Kierunki",
-        "description": "Zaznacz co najmniej jeden kierunek. Wybrane warianty pojawią się wspólnie w sensorze i kalendarzu.",
+        "title": "Kierunki linii {line}",
+        "description": "Zaznacz kierunki, które mają być prezentowane razem. Przeciwny kierunek możesz dodać osobno, ponownie wybierając ten sam przystanek i linię.",
         "data": {
           "directions": "Kierunki"
         }
@@ -39,6 +40,13 @@
         "title": "Ustawienia rozkładu",
         "data": {
           "calendar_days": "Liczba dni w kalendarzu",
+          "lines": "Linie"
+        }
+      },
+      "direction": {
+        "title": "Kierunki linii {line}",
+        "description": "Zaznacz kierunki, które mają być prezentowane razem. Przeciwny kierunek możesz dodać osobno, ponownie wybierając ten sam przystanek i linię.",
+        "data": {
           "directions": "Kierunki"
         }
       }
@@ -47,19 +55,17 @@
       "invalid_calendar_days": "Podaj liczbę całkowitą od 1 do 14.",
       "invalid_selection": "Zaznacz co najmniej jeden kierunek z listy.",
       "already_configured": "Taki zestaw kierunków jest już skonfigurowany dla tego przystanku i linii.",
-      "cannot_connect": "Nie można pobrać danych Nord Express. Spróbuj ponownie."
+      "cannot_connect": "Nie można pobrać danych Nord Express. Spróbuj ponownie.",
+      "no_departures": "Brak odjazdów w najbliższych 7 dniach."
+    },
+    "abort": {
+      "already_configured": "Ta relacja jest już skonfigurowana."
     }
   },
   "entity": {
     "sensor": {
       "next_departure": {
         "name": "Najbliższy odjazd"
-      },
-      "following_departure": {
-        "name": "Kolejny odjazd"
-      },
-      "minutes_until_departure": {
-        "name": "Minuty do odjazdu"
       }
     }
   }

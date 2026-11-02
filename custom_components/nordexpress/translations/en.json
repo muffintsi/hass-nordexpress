@@ -10,14 +10,15 @@
         }
       },
       "line": {
-        "title": "Line",
+        "title": "Lines",
+        "description": "Select the lines to add as sensors and calendars.",
         "data": {
-          "line": "Line"
+          "lines": "Lines"
         }
       },
       "direction": {
-        "title": "Destinations",
-        "description": "Select one or more destinations. Their departures share one sensor and calendar.",
+        "title": "Destinations for line {line}",
+        "description": "Select the destinations to display together. Add the same stop and line again to display the opposite direction separately.",
         "data": {
           "directions": "Destinations"
         }
@@ -39,6 +40,13 @@
         "title": "Timetable settings",
         "data": {
           "calendar_days": "Days in calendar",
+          "lines": "Lines"
+        }
+      },
+      "direction": {
+        "title": "Destinations for line {line}",
+        "description": "Select the destinations to display together. Add the same stop and line again to display the opposite direction separately.",
+        "data": {
           "directions": "Destinations"
         }
       }
@@ -47,19 +55,17 @@
       "invalid_calendar_days": "Enter a whole number from 1 to 14.",
       "invalid_selection": "Select at least one destination from the list.",
       "already_configured": "This combination of destinations is already configured for this stop and line.",
-      "cannot_connect": "Cannot fetch Nord Express data. Please retry."
+      "cannot_connect": "Cannot fetch Nord Express data. Please retry.",
+      "no_departures": "No departures in the next 7 days."
+    },
+    "abort": {
+      "already_configured": "This stop, line and destination are already configured."
     }
   },
   "entity": {
     "sensor": {
       "next_departure": {
         "name": "Next departure"
-      },
-      "following_departure": {
-        "name": "Following departure"
-      },
-      "minutes_until_departure": {
-        "name": "Minutes until departure"
       }
     }
   }

@@ -1,3 +1,31 @@
+# Walidacja 0.3.0 — 2026-11-02
+
+- 49 testów klienta/modelu/prezentacji: OK.
+- Test z rzeczywistymi klasami HA 2026.10.4: OK — wybór 101 i 105 na przystanku,
+  kierunki osobno dla każdej linii, po jednym sensorze i kalendarzu na linię,
+  wspólne odjazdy Główczyce/Cecenowo oraz ponowne dodanie tego samego przystanku
+  i 105 z osobnym kierunkiem Słupsk. Identyczny zestaw jest blokowany jako duplikat.
+- Opcje: zmiana listy linii i kierunków oraz walidacja pustego wyboru — OK.
+- Rejestr HA: usuwanie dawnych sensorów pomocniczych i nieaktywnej linii, zachowanie
+  aktywnych sensorów, wpisu niestandardowego i encji obcej platformy — OK.
+- Zgodność dawnych wpisów z jedną linią i zachowanie ich identyfikatorów — OK.
+- Ruff, kompilacja i składnia JSON — OK.
+- Pełnego cyklu życia z oficjalnym harness nie uruchomiono na Windows (brak fcntl).
+  Workflow CI jest skonfigurowany do uruchamiania go na Ubuntu.
+- Nie zmieniano konfiguracji docelowego HA.
+
+# Walidacja 0.2.1 — 2026-11-02
+
+- 44 testy klienta/modelu/prezentacji: OK.
+- Test z rzeczywistymi klasami HA 2026.10.4: OK. Platforma tworzy dokładnie jeden
+  sensor, o dotychczasowym unique_id i krótkiej nazwie; kolejne odjazdy są
+  dostępne w atrybutach. Kalendarz zachowuje oba wybrane kierunki.
+- Test rzeczywistego rejestru encji: dwa dawne sensory pomocnicze są usuwane;
+  główny sensor, niestandardowy wpis i encja innej platformy pozostają. Powtórne
+  czyszczenie działa poprawnie.
+- Pełny cykl życia HA pozostaje testowany przez workflow na Linuksie; lokalny
+  test na Windows nie uruchamia docelowej instalacji HA.
+
 # Walidacja 0.2.0 — 2026-11-02
 
 - 44 testy: OK, w tym wspólne sortowanie kierunków, zachowanie nazw kierunków

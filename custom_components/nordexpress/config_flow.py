@@ -1,4 +1,4 @@
-"""UI configuration: stop, line, and exact destination."""
+"""Configure an independent group of lines and destinations at one stop."""
 
 from datetime import datetime, timedelta
 from uuid import uuid4
@@ -14,7 +14,7 @@ from homeassistant.helpers import selector
 from . import get_api
 from .api import NordExpressError
 from .const import DOMAIN, HORIZON_DAYS, MAX_CALENDAR_DAYS, validate_calendar_days
-from .model import WARSAW, configured_directions, normalize_directions, timetable
+from .model import WARSAW, configured_routes, normalize_directions, timetable
 
 
 def selection(options, multiple=False):
@@ -27,6 +27,15 @@ def selection(options, multiple=False):
     )
 
 
+async def available_lines(hass, stop):
+    result = set()
+    today = datetime.now(WARSAW).date()
+    for offset in range(HORIZON_DAYS):
+        rows = await get_api(hass).directions(stop, today + timedelta(days=offset))
+        result.update(str(row["line"]) for row in rows)
+    return sorted(result)
+
+
 async def destinations(hass, stop, line):
     result = set()
     today = datetime.now(WARSAW).date()
@@ -37,17 +46,73 @@ async def destinations(hass, stop, line):
     return sorted(result)
 
 
-def duplicate(hass, stop, line, selected, exclude=None):
+def duplicate(hass, stop, routes, exclude=None):
     return any(
         entry.entry_id != exclude
         and entry.data.get("stop_id") == stop
-        and entry.data.get("line") == line
-        and configured_directions(entry.data, entry.options) == selected
+        and configured_routes(entry.data, entry.options) == routes
         for entry in hass.config_entries.async_entries(DOMAIN)
     )
 
 
-class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+def title(stop_name, routes):
+    return (
+        stop_name
+        + " · "
+        + "; ".join(f"{line} → {' / '.join(directions)}" for line, directions in routes.items())
+    )
+
+
+class DirectionSteps:
+    """Ask separately about destinations for every explicitly selected line."""
+
+    def _start_directions(self, lines, current=None):
+        self._selected_lines = list(lines)
+        self._routes = {}
+        self._line_index = 0
+        self._known = {}
+        self._previous_routes = current or {}
+
+    async def async_step_direction(self, user_input=None):
+        line = self._selected_lines[self._line_index]
+        errors = {}
+        if line not in self._known or not self._known[line]:
+            try:
+                known = await destinations(self.hass, self._stop_id, line)
+            except (NordExpressError, KeyError, TypeError, ValueError):
+                known = []
+                errors["base"] = "cannot_connect"
+            self._known[line] = sorted(set(known) | set(self._previous_routes.get(line, ())))
+        if user_input is not None and not errors:
+            try:
+                selected = normalize_directions(user_input.get("directions", []))
+                if not set(selected).issubset(self._known[line]):
+                    raise ValueError("Unknown destination")
+            except ValueError:
+                errors["base"] = "invalid_selection"
+            else:
+                self._routes[line] = selected
+                if self._line_index + 1 < len(self._selected_lines):
+                    self._line_index += 1
+                    return await self.async_step_direction()
+                return await self._finish_routes()
+        if not self._known[line] and not errors:
+            errors["base"] = "no_departures"
+        return self.async_show_form(
+            step_id="direction",
+            errors=errors,
+            description_placeholders={"line": line},
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "directions", default=list(self._previous_routes.get(line, ()))
+                    ): selection(self._known[line], multiple=True),
+                }
+            ),
+        )
+
+
+class NordExpressConfigFlow(DirectionSteps, config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     @staticmethod
@@ -59,8 +124,6 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._stops = []
         self._stop = None
         self._lines = []
-        self._line = None
-        self._destinations = []
 
     async def async_step_user(self, user_input=None):
         errors = {}
@@ -69,6 +132,7 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 (stop for stop in self._stops if stop["id"] == user_input["stop_id"]), None
             )
             if self._stop is not None:
+                self._stop_id = self._stop["id"]
                 return await self.async_step_line()
             errors["base"] = "invalid_selection"
         try:
@@ -95,19 +159,17 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_line(self, user_input=None):
         errors = {}
         if user_input is not None:
-            if user_input["line"] in self._lines:
-                self._line = user_input["line"]
+            try:
+                lines = normalize_directions(user_input.get("lines", []))
+                if not set(lines).issubset(self._lines):
+                    raise ValueError("Unknown line")
+            except ValueError:
+                errors["base"] = "invalid_selection"
+            else:
+                self._start_directions(lines)
                 return await self.async_step_direction()
-            errors["base"] = "invalid_selection"
         try:
-            lines = set()
-            for offset in range(HORIZON_DAYS):
-                day = datetime.now(WARSAW).date() + timedelta(days=offset)
-                lines.update(
-                    str(row["line"])
-                    for row in await get_api(self.hass).directions(self._stop["id"], day)
-                )
-            self._lines = sorted(lines)
+            self._lines = await available_lines(self.hass, self._stop_id)
             if not self._lines:
                 errors["base"] = "no_lines"
         except (NordExpressError, KeyError, TypeError, ValueError):
@@ -117,104 +179,65 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             data_schema=vol.Schema(
                 {
-                    vol.Required("line"): selection(self._lines),
+                    vol.Required("lines"): selection(self._lines, multiple=True),
                 }
             ),
         )
 
-    async def async_step_direction(self, user_input=None):
-        errors = {}
-        if user_input is not None:
-            try:
-                selected = normalize_directions(user_input.get("directions", []))
-                if not set(selected).issubset(self._destinations):
-                    raise ValueError("Unknown destination")
-            except ValueError:
-                errors["base"] = "invalid_selection"
-            else:
-                if duplicate(self.hass, self._stop["id"], self._line, selected):
-                    return self.async_abort(reason="already_configured")
-                # Keep identity independent of editable destination selections.
-                await self.async_set_unique_id(uuid4().hex)
-                label = " / ".join(selected)
-                return self.async_create_entry(
-                    title=f"{self._stop['name']} · {self._line} → {label}",
-                    data={
-                        "stop_id": self._stop["id"],
-                        "stop_name": self._stop["name"],
-                        "line": self._line,
-                        "directions": list(selected),
-                        "direction": label,
-                        "latitude": self._stop["latitude"],
-                        "longitude": self._stop["longitude"],
-                        "stop_code": str(self._stop["number"]),
-                    },
-                )
-        try:
-            self._destinations = await destinations(self.hass, self._stop["id"], self._line)
-            if not self._destinations:
-                errors["base"] = "no_departures"
-        except (NordExpressError, KeyError, TypeError, ValueError):
-            errors["base"] = "cannot_connect"
-        return self.async_show_form(
-            step_id="direction",
-            errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Required("directions"): selection(self._destinations, multiple=True),
-                }
-            ),
+    async def _finish_routes(self):
+        if duplicate(self.hass, self._stop_id, self._routes):
+            return self.async_abort(reason="already_configured")
+        await self.async_set_unique_id(uuid4().hex)
+        return self.async_create_entry(
+            title=title(self._stop["name"], self._routes),
+            data={
+                "stop_id": self._stop_id,
+                "stop_name": self._stop["name"],
+                "latitude": self._stop["latitude"],
+                "longitude": self._stop["longitude"],
+                "stop_code": str(self._stop["number"]),
+                "routes": {line: list(directions) for line, directions in self._routes.items()},
+            },
         )
 
 
-class NordExpressOptionsFlow(config_entries.OptionsFlow):
+class NordExpressOptionsFlow(DirectionSteps, config_entries.OptionsFlow):
     def __init__(self):
-        self._destinations = None
+        self._lines = None
 
     async def async_step_init(self, user_input=None):
         errors = {}
         entry = self.config_entry
-        selected = configured_directions(entry.data, entry.options)
-        if self._destinations is None:
+        self._stop_id = entry.data["stop_id"]
+        current = configured_routes(entry.data, entry.options)
+        if self._lines is None:
             try:
-                available = await destinations(self.hass, entry.data["stop_id"], entry.data["line"])
+                available = await available_lines(self.hass, self._stop_id)
             except (NordExpressError, KeyError, TypeError, ValueError):
                 available = []
                 errors["base"] = "cannot_connect"
-            # A destination temporarily absent from the schedule remains selectable.
-            self._destinations = sorted(set(available) | set(selected))
+            self._lines = sorted(set(available) | set(current))
         if user_input is not None:
             try:
-                days = validate_calendar_days(user_input["calendar_days"])
-            except (ValueError, KeyError):
+                self._days = validate_calendar_days(user_input["calendar_days"])
+            except (KeyError, ValueError):
                 errors["calendar_days"] = "invalid_calendar_days"
             try:
-                selected = normalize_directions(user_input.get("directions", list(selected)))
-                if not set(selected).issubset(self._destinations):
-                    raise ValueError("Unknown destination")
+                lines = normalize_directions(user_input.get("lines", list(current)))
+                if not set(lines).issubset(self._lines):
+                    raise ValueError("Unknown line")
             except ValueError:
-                errors["directions"] = "invalid_selection"
-            else:
-                if duplicate(
-                    self.hass, entry.data["stop_id"], entry.data["line"], selected, entry.entry_id
-                ):
-                    errors["base"] = "already_configured"
+                errors["lines"] = "invalid_selection"
             if not errors:
-                return self.async_create_entry(
-                    title="",
-                    data={
-                        **entry.options,
-                        "calendar_days": days,
-                        "directions": list(selected),
-                    },
-                )
+                self._start_directions(lines, current)
+                return await self.async_step_direction()
         return self.async_show_form(
             step_id="init",
             errors=errors,
             data_schema=vol.Schema(
                 {
-                    vol.Required("directions", default=list(selected)): selection(
-                        self._destinations, multiple=True
+                    vol.Required("lines", default=list(current)): selection(
+                        self._lines, multiple=True
                     ),
                     vol.Required(
                         "calendar_days", default=entry.options.get("calendar_days", HORIZON_DAYS)
@@ -228,4 +251,17 @@ class NordExpressOptionsFlow(config_entries.OptionsFlow):
                     ),
                 }
             ),
+        )
+
+    async def _finish_routes(self):
+        entry = self.config_entry
+        if duplicate(self.hass, self._stop_id, self._routes, entry.entry_id):
+            return self.async_abort(reason="already_configured")
+        return self.async_create_entry(
+            title="",
+            data={
+                **{key: value for key, value in entry.options.items() if key != "directions"},
+                "calendar_days": self._days,
+                "routes": {line: list(directions) for line, directions in self._routes.items()},
+            },
         )

@@ -33,6 +33,22 @@ def configured_directions(config, options=None) -> tuple[str, ...]:
     )
 
 
+def configured_routes(config, options=None) -> dict[str, tuple[str, ...]]:
+    """Read stop-wide selections and legacy single-line entries."""
+    options = options or {}
+    routes = options.get("routes", config.get("routes"))
+    if routes is None:
+        return {str(config["line"]): configured_directions(config, options)}
+    if not isinstance(routes, dict) or not routes:
+        raise ValueError("Select at least one line")
+    return {str(line): normalize_directions(directions) for line, directions in routes.items()}
+
+
+def route_identity(config, unique_id, line):
+    """Keep the original identity for the line in a legacy configuration."""
+    return unique_id if str(config.get("line", "")) == line else f"{unique_id}_{line}"
+
+
 def instant(value: datetime) -> datetime:
     """Use UTC for ordering (including repeated hours during DST)."""
     return value.astimezone(timezone.utc)
