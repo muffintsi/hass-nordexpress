@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
 
 
 @pytest.mark.asyncio
@@ -51,9 +52,15 @@ async def test_platforms_calendar_options_and_unload(hass, api, entry):
     assert main.attributes["Direction"] == "Słupsk"
     assert main.attributes["BusHour"] in {"10:00", "11:00"}
     assert main.attributes["latitude"] == 54.619418
-    assert main.attributes["realtime_available"] is True
+    assert "departures" not in main.attributes
+    assert "canceled_departures" not in main.attributes
     calendars = hass.states.async_all("calendar")
     assert len(calendars) == 1
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get(main.entity_id).device_id
+        == registry.async_get(calendars[0].entity_id).device_id
+    )
     assert calendars[0].attributes["calendar_days"] == 7
     now = datetime.now(timezone.utc)
     result = await hass.services.async_call(
@@ -96,7 +103,7 @@ async def test_live_failure_falls_back_to_schedule(hass, api, entry):
     await hass.async_block_till_done()
     main = next(state for state in hass.states.async_all("sensor") if "BusHour" in state.attributes)
     assert main.state not in {"unavailable", "unknown"}
-    assert main.attributes["realtime_available"] is False
+    assert entry.runtime_data["105"].data["realtime_available"] is False
 
 
 @pytest.mark.asyncio

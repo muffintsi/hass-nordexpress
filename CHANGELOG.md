@@ -1,5 +1,12 @@
 # Zmiany
 
+## 0.3.1 — 2026-11-02
+
+- Sensor udostępnia wyłącznie atrybuty zgodne z ZIM Słupsk.
+- Usunięcie z atrybutów Departures, Canceled departures i surowych pól API.
+- Osobna encja kalendarza jest przypisana do tego samego urządzenia co sensor.
+- Zachowanie istniejących ID sensorów i kalendarzy.
+
 ## 0.3.0 — 2026-11-02
 
 - Wybór kilku linii po wskazaniu przystanku.

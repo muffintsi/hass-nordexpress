@@ -69,20 +69,4 @@ class NordExpressSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        data = self.coordinator.data or {}
-        departures = self._upcoming()
-        attrs = {
-            "stop_id": self.coordinator.config["stop_id"],
-            "line": self.coordinator.config["line"],
-            "direction": self.coordinator.config["direction"],
-            "directions": self.coordinator.config["directions"],
-            "realtime_available": data.get("realtime_available", False),
-            "horizon_end": data.get("horizon_end"),
-        }
-        attrs.update(zim_attributes(departures, self.coordinator.config))
-        attrs["departures"] = [item.as_dict() for item in departures[:10]]
-        attrs["canceled_departures"] = data.get("canceled", [])[:10]
-        attrs["realtime_timestamp"] = data.get("realtime_timestamp")
-        if departures:
-            attrs.update(departures[0].as_dict())
-        return attrs
+        return zim_attributes(self._upcoming(), self.coordinator.config)

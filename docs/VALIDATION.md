@@ -1,3 +1,14 @@
+# Walidacja 0.3.1 — 2026-11-02
+
+- 49 testów klienta/modelu/prezentacji: OK.
+- Test z rzeczywistymi klasami HA 2026.10.4: OK. Sensor ma dokładnie 10 atrybutów
+  zgodnych z ZIM, bez list i zagnieżdżonych danych API.
+- Kalendarz ma osobny unique_id i wspólne device identifiers z sensorem.
+  Test na rzeczywistych rejestrach urządzeń i encji HA potwierdził wspólny device_id.
+- Test pełnego cyklu życia HA sprawdza również powiązanie sensora i kalendarza
+  z tym samym urządzeniem; jest przeznaczony dla CI na Linuksie.
+- Nie zmieniano działającej instalacji HA.
+
 # Walidacja 0.3.0 — 2026-11-02
 
 - 49 testów klienta/modelu/prezentacji: OK.

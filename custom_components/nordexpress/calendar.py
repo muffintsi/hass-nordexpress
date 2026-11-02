@@ -7,6 +7,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .const import DOMAIN
 from .model import WARSAW, instant, route_identity
 from .presentation import calendar_records
 
@@ -25,6 +26,10 @@ class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
         line = coordinator.config["line"]
         self._attr_unique_id = f"{route_identity(entry.data, entry.unique_id, line)}_calendar"
         self._attr_name = f"Linia {line} - {entry.data['stop_name']}"
+        # Share the sensor's device so the calendar is visible beside it in HA.
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, route_identity(entry.data, entry.unique_id, line))},
+        }
         self._attr_extra_state_attributes = {
             "calendar_days": self.coordinator.calendar_days,
             "line": line,
@@ -32,8 +37,6 @@ class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
             "longitude": entry.data.get("longitude"),
             "stop_name": entry.data["stop_name"],
             "stop_code": entry.data.get("stop_code"),
-            "direction": self.coordinator.config["direction"],
-            "directions": self.coordinator.config["directions"],
         }
 
     async def async_added_to_hass(self):

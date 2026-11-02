@@ -109,9 +109,23 @@ async def main():
         attrs = sensor105.extra_state_attributes
         assert sensor105.name == "Linia 105 - Główczyce"
         assert {attrs["Direction"], attrs["NextBusDirection"]} == {"Główczyce", "Cecenowo"}
-        assert all(row["direction"] != "Słupsk" for row in attrs["departures"])
+        assert set(attrs) == {
+            "line",
+            "Direction",
+            "BusHour",
+            "NextBusDirection",
+            "NextBusTime",
+            "NextBusHour",
+            "latitude",
+            "longitude",
+            "stop_name",
+            "stop_code",
+        }
+        assert all(not isinstance(value, (list, dict)) for value in attrs.values())
         now = datetime.now(WARSAW)
         cal105 = next(cal for cal in calendars if cal.extra_state_attributes["line"] == "105")
+        assert cal105.device_info["identifiers"] == sensor105.device_info["identifiers"]
+        assert sensor105.unique_id != cal105.unique_id
         events = await cal105.async_get_events(hass, now, now + timedelta(days=2))
         assert {event.summary for event in events} == {
             "Linia 105 → Główczyce",
@@ -141,18 +155,44 @@ async def main():
         await dr.async_load(hass)
         await er.async_load(hass)
         registry = er.async_get(hass)
+        device_registry = dr.async_get(hass)
+        devices = {
+            sensor.extra_state_attributes["line"]: device_registry.async_get_or_create(
+                config_entry_id=entry.entry_id,
+                **sensor.device_info,
+            )
+            for sensor in sensors
+        }
         active = [
             registry.async_get_or_create(
-                "sensor", "nordexpress", sensor.unique_id, config_entry=entry
+                "sensor",
+                "nordexpress",
+                sensor.unique_id,
+                config_entry=entry,
+                device_id=devices[sensor.extra_state_attributes["line"]].id,
             ).entity_id
             for sensor in sensors
         ]
         active += [
             registry.async_get_or_create(
-                "calendar", "nordexpress", cal.unique_id, config_entry=entry
+                "calendar",
+                "nordexpress",
+                cal.unique_id,
+                config_entry=entry,
+                device_id=device_registry.async_get_device_by_identifier(
+                    next(iter(cal.device_info["identifiers"])),
+                    entry.entry_id,
+                ).id,
             ).entity_id
             for cal in calendars
         ]
+        sensor_record = registry.async_get(
+            registry.async_get_entity_id("sensor", "nordexpress", sensor105.unique_id)
+        )
+        calendar_record = registry.async_get(
+            registry.async_get_entity_id("calendar", "nordexpress", cal105.unique_id)
+        )
+        assert sensor_record.device_id == calendar_record.device_id
         obsolete = [
             registry.async_get_or_create(
                 "sensor", "nordexpress", f"group-a_{key}", config_entry=entry

@@ -1,6 +1,6 @@
 # Nord Express dla Home Assistant
 
-Wersja 0.3.0. Nieoficjalna integracja rozkładów i prognoz Nord Express z
+Wersja 0.3.1. Nieoficjalna integracja rozkładów i prognoz Nord Express z
 `nordexpress.kiedyprzyjedzie.pl`. Konfiguracja przez interfejs HA, bez YAML i konta.
 
 ## Instalacja
@@ -30,11 +30,11 @@ Identyczny zestaw linii i kierunków na tym samym przystanku jest wykrywany jako
 duplikat. Dostępne kierunki zależą od danych rzeczywistego przystanku.
 
 Jeżeli dwa sensory mają tę samą krótką nazwę, ich grupę rozpoznasz po tytule wpisu,
-nazwie urządzenia i atrybutach `directions`. Nazwę sensora możesz też ustawić w HA.
+nazwie urządzenia. Nazwę sensora możesz też ustawić w HA.
 
 ## Aktualizacja istniejącej instalacji
 
-Zastąp pliki komponentu wersją 0.3.0 i uruchom ponownie HA. Dotychczasowe wpisy
+Zastąp pliki komponentu wersją 0.3.1 i uruchom ponownie HA. Dotychczasowe wpisy
 z jedną linią nadal działają, a główny sensor oraz kalendarz zachowują swoje ID.
 Dwa dawne sensory pomocnicze są automatycznie usuwane z rejestru HA.
 
@@ -63,7 +63,9 @@ Sensor ma krótką nazwę, np. **Linia 105 - Główczyce**, ikonę `mdi:bus` i k
 W karcie ZIM wystarczy wskazać nowy sensor. Atrybuty zachowują wielkość liter.
 Godziny są prezentowane w strefie przewoźnika `Europe/Warsaw`.
 
-Kalendarz ma tę samą krótką nazwę, tytuły **Linia 105 → kierunek** i minutowe
+Kalendarz jest **osobną encją `calendar.*`**, przypisaną do tego samego urządzenia
+co sensor `sensor.*`, dzięki czemu widać go obok sensora na stronie urządzenia.
+Ma tę samą krótką nazwę, tytuły **Linia 105 → kierunek** i minutowe
 wydarzenia, tak jak w ZIM. Każdy kurs zachowuje właściwy kierunek. Kalendarz
 pokazuje godziny planowe; sensor używa prognozy, jeśli jest dostępna. Odwołane
 kursy są pomijane. Można użyć wspólnej standardowej karty kalendarza dla ZIM i Nord Express.
@@ -88,15 +90,14 @@ content: >-
 
 ## Dane i pobieranie
 
-`directions` opisuje wybraną grupę kierunków. `departures` zawiera do 10 kolejnych
-kursów, a `canceled_departures` kursy odwołane. Każdy odjazd ma m.in. `scheduled`,
-`expected`, `estimated`, `canceled`, `at_stop`, `platform`, `direction`, `trip_id`
-i `stop_index`. Dodatkowe atrybuty: `realtime_available`, `realtime_timestamp`,
-`horizon_end`.
+Sensor udostępnia wyłącznie 10 atrybutów wymienionych w tabeli powyżej,
+zgodnie z ZIM. Nie zawiera list `departures`, `canceled_departures` ani
+identyfikatorów kursów, indeksów przystanków, timestampów i flag API.
+Cały rozkład przegląda się w osobnym kalendarzu HA.
 
-`realtime_available` oznacza dostępność bieżącej tablicy; `estimated` mówi, czy
-konkretny odjazd ma prognozę. Przy awarii tablicy używany jest rozkład i
-`realtime_available: false`. Awaria rozkładu powoduje niedostępność encji.
+Dane techniczne są używane wewnętrznie do dopasowania kursów, prognoz i odwołań.
+Przy awarii tablicy używany jest rozkład. Awaria rozkładu powoduje niedostępność
+encji. Kursy odwołane są pomijane.
 
 API podaje prognozy jako `N min`, `< 1 min` i `HH:MM`. Dokładność to minuty;
 `< 1 min` oznacza kurs nadjeżdżający teraz. Podstawą obliczeń jest timestamp
