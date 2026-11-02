@@ -16,10 +16,10 @@
         }
       },
       "direction": {
-        "title": "Kierunek",
-        "description": "Wybierz dokładny kierunek. Warianty tras mają osobne rozkłady.",
+        "title": "Kierunki",
+        "description": "Zaznacz co najmniej jeden kierunek. Wybrane warianty pojawią się wspólnie w sensorze i kalendarzu.",
         "data": {
-          "direction": "Kierunek"
+          "directions": "Kierunki"
         }
       }
     },
@@ -38,12 +38,16 @@
       "init": {
         "title": "Ustawienia rozkładu",
         "data": {
-          "calendar_days": "Liczba dni w kalendarzu"
+          "calendar_days": "Liczba dni w kalendarzu",
+          "directions": "Kierunki"
         }
       }
     },
     "error": {
-      "invalid_calendar_days": "Podaj liczbę całkowitą od 1 do 14."
+      "invalid_calendar_days": "Podaj liczbę całkowitą od 1 do 14.",
+      "invalid_selection": "Zaznacz co najmniej jeden kierunek z listy.",
+      "already_configured": "Taki zestaw kierunków jest już skonfigurowany dla tego przystanku i linii.",
+      "cannot_connect": "Nie można pobrać danych Nord Express. Spróbuj ponownie."
     }
   },
   "entity": {

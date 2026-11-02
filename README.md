@@ -1,6 +1,6 @@
 # Nord Express dla Home Assistant
 
-Wersja 0.1.0. Nieoficjalna integracja rozkładów i prognoz odjazdów Nord Express
+Wersja 0.2.0. Nieoficjalna integracja rozkładów i prognoz odjazdów Nord Express
 z `nordexpress.kiedyprzyjedzie.pl`. Konfiguracja z interfejsu HA, bez YAML i konta.
 
 ## Instalacja
@@ -9,13 +9,24 @@ z `nordexpress.kiedyprzyjedzie.pl`. Konfiguracja z interfejsu HA, bez YAML i kon
    `/config/custom_components/nordexpress` w Home Assistant.
 2. Uruchom ponownie HA.
 3. Otwórz **Ustawienia → Urządzenia i usługi → Dodaj integrację → Nord Express**.
-4. Wybierz przystanek, linię i dokładny kierunek. Dla kolejnej relacji dodaj
-   następny wpis integracji. Ten sam przystanek może mieć różne kierunki i linie.
+4. Wybierz przystanek, linię i zaznacz jeden lub kilka kierunków.
+   Przykład: 105 ze Słupska — **Główczyce + Cecenowo**. Kursy obu wariantów
+   trafiają wspólnie do sensora i kalendarza, chronologicznie.
+   Dla innego przystanku lub linii dodaj kolejny wpis integracji.
 
 Archiwum instalacyjne zawiera katalog `custom_components` gotowy do wypakowania
 w katalogu konfiguracji HA. Nie usuwa ani nie zastępuje starego pakietu YAML.
 Po porównaniu nowych encji przełącz karty i automatyzacje, a następnie wyłącz stare
 sensory Nord Express. Nowe encje mają własne identyfikatory.
+
+## Aktualizacja z 0.1.0
+
+Zastąp katalog komponentu wersją 0.2.0 i uruchom ponownie HA. Następnie otwórz
+**Ustawienia → Urządzenia i usługi → Nord Express → Opcje** przy swoim wpisie
+(na niektórych wersjach HA przycisk nazywa się „Konfiguruj”). Zaznacz np.
+**Główczyce** i **Cecenowo**, po czym zapisz. Nie musisz usuwać wpisu ani ponownie
+ustawiać kart: identyfikatory encji pozostają te same. Stare wpisy z pojedynczym
+kierunkiem nadal działają. Zaznaczenie kilku kierunków nie dodaje nowych sensorów.
 
 ## Prezentacja zgodna z hass-zim-slupsk
 
@@ -26,10 +37,10 @@ pasują do konwencji lokalnej integracji `hass-zim-slupsk`:
 | Atrybut | Znaczenie |
 |---|---|
 | `BusHour` | Najbliższy odjazd, `HH:MM` |
-| `Direction` | Kierunek najbliższego odjazdu |
+| `Direction` | Rzeczywisty kierunek najbliższego odjazdu |
 | `NextBusHour` | Następny odjazd, `HH:MM` |
 | `NextBusTime` | Następny odjazd, `YYYY-MM-DD HH:MM` |
-| `NextBusDirection` | Kierunek następnego odjazdu |
+| `NextBusDirection` | Rzeczywisty kierunek następnego odjazdu |
 | `line`, `stop_name`, `stop_code` | Linia i przystanek |
 | `latitude`, `longitude` | Współrzędne przystanku |
 
@@ -67,6 +78,9 @@ content: >-
 ```
 
 ## Dodatkowe dane i wiarygodność
+
+Wybrane kierunki są w atrybucie `directions`. Każdy odjazd oraz tytuł wydarzenia
+kalendarza zachowuje swój rzeczywisty kierunek, np. Główczyce lub Cecenowo.
 
 Główny sensor udostępnia do 10 następnych kursów w `departures`, odwołane kursy
 w `canceled_departures`, `realtime_available`, `realtime_timestamp` i `horizon_end`.

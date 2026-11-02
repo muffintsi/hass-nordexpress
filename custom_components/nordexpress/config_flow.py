@@ -1,6 +1,7 @@
 """UI configuration: stop, line, and exact destination."""
 
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 try:
     import probatio as vol
@@ -13,15 +14,36 @@ from homeassistant.helpers import selector
 from . import get_api
 from .api import NordExpressError
 from .const import DOMAIN, HORIZON_DAYS, MAX_CALENDAR_DAYS, validate_calendar_days
-from .model import WARSAW, timetable
+from .model import WARSAW, configured_directions, normalize_directions, timetable
 
 
-def selection(options):
+def selection(options, multiple=False):
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options,
+            multiple=multiple,
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
+    )
+
+
+async def destinations(hass, stop, line):
+    result = set()
+    today = datetime.now(WARSAW).date()
+    for offset in range(HORIZON_DAYS):
+        day = today + timedelta(days=offset)
+        payload = await get_api(hass).timetable(stop, line, day)
+        result.update(item.direction for item in timetable(payload, day, line) if item.direction)
+    return sorted(result)
+
+
+def duplicate(hass, stop, line, selected, exclude=None):
+    return any(
+        entry.entry_id != exclude
+        and entry.data.get("stop_id") == stop
+        and entry.data.get("line") == line
+        and configured_directions(entry.data, entry.options) == selected
+        for entry in hass.config_entries.async_entries(DOMAIN)
     )
 
 
@@ -103,32 +125,33 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_direction(self, user_input=None):
         errors = {}
         if user_input is not None:
-            direction = user_input["direction"]
-            if direction in self._destinations:
-                await self.async_set_unique_id(f"{self._stop['id']}|{self._line}|{direction}")
-                self._abort_if_unique_id_configured()
+            try:
+                selected = normalize_directions(user_input.get("directions", []))
+                if not set(selected).issubset(self._destinations):
+                    raise ValueError("Unknown destination")
+            except ValueError:
+                errors["base"] = "invalid_selection"
+            else:
+                if duplicate(self.hass, self._stop["id"], self._line, selected):
+                    return self.async_abort(reason="already_configured")
+                # Keep identity independent of editable destination selections.
+                await self.async_set_unique_id(uuid4().hex)
+                label = " / ".join(selected)
                 return self.async_create_entry(
-                    title=f"{self._stop['name']} · {self._line} → {direction}",
+                    title=f"{self._stop['name']} · {self._line} → {label}",
                     data={
                         "stop_id": self._stop["id"],
                         "stop_name": self._stop["name"],
                         "line": self._line,
-                        "direction": direction,
+                        "directions": list(selected),
+                        "direction": label,
                         "latitude": self._stop["latitude"],
                         "longitude": self._stop["longitude"],
                         "stop_code": str(self._stop["number"]),
                     },
                 )
-            errors["base"] = "invalid_selection"
         try:
-            destinations = set()
-            for offset in range(HORIZON_DAYS):
-                day = datetime.now(WARSAW).date() + timedelta(days=offset)
-                payload = await get_api(self.hass).timetable(self._stop["id"], self._line, day)
-                destinations.update(
-                    item.direction for item in timetable(payload, day, self._line) if item.direction
-                )
-            self._destinations = sorted(destinations)
+            self._destinations = await destinations(self.hass, self._stop["id"], self._line)
             if not self._destinations:
                 errors["base"] = "no_departures"
         except (NordExpressError, KeyError, TypeError, ValueError):
@@ -138,26 +161,51 @@ class NordExpressConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             data_schema=vol.Schema(
                 {
-                    vol.Required("direction"): selection(self._destinations),
+                    vol.Required("directions"): selection(self._destinations, multiple=True),
                 }
             ),
         )
 
 
 class NordExpressOptionsFlow(config_entries.OptionsFlow):
+    def __init__(self):
+        self._destinations = None
+
     async def async_step_init(self, user_input=None):
         errors = {}
+        entry = self.config_entry
+        selected = configured_directions(entry.data, entry.options)
+        if self._destinations is None:
+            try:
+                available = await destinations(self.hass, entry.data["stop_id"], entry.data["line"])
+            except (NordExpressError, KeyError, TypeError, ValueError):
+                available = []
+                errors["base"] = "cannot_connect"
+            # A destination temporarily absent from the schedule remains selectable.
+            self._destinations = sorted(set(available) | set(selected))
         if user_input is not None:
             try:
                 days = validate_calendar_days(user_input["calendar_days"])
             except (ValueError, KeyError):
                 errors["calendar_days"] = "invalid_calendar_days"
+            try:
+                selected = normalize_directions(user_input.get("directions", list(selected)))
+                if not set(selected).issubset(self._destinations):
+                    raise ValueError("Unknown destination")
+            except ValueError:
+                errors["directions"] = "invalid_selection"
             else:
+                if duplicate(
+                    self.hass, entry.data["stop_id"], entry.data["line"], selected, entry.entry_id
+                ):
+                    errors["base"] = "already_configured"
+            if not errors:
                 return self.async_create_entry(
                     title="",
                     data={
-                        **self.config_entry.options,
+                        **entry.options,
                         "calendar_days": days,
+                        "directions": list(selected),
                     },
                 )
         return self.async_show_form(
@@ -165,9 +213,11 @@ class NordExpressOptionsFlow(config_entries.OptionsFlow):
             errors=errors,
             data_schema=vol.Schema(
                 {
+                    vol.Required("directions", default=list(selected)): selection(
+                        self._destinations, multiple=True
+                    ),
                     vol.Required(
-                        "calendar_days",
-                        default=self.config_entry.options.get("calendar_days", HORIZON_DAYS),
+                        "calendar_days", default=entry.options.get("calendar_days", HORIZON_DAYS)
                     ): selector.NumberSelector(
                         selector.NumberSelectorConfig(
                             min=1,

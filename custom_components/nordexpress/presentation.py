@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from .model import instant
+from .model import instant, normalize_directions
 
 
 def zim_attributes(departures, config):
@@ -25,10 +25,11 @@ def zim_attributes(departures, config):
 def calendar_records(departures, direction, start, end):
     """ZIM-compatible one-minute planned departures and half-open query ranges."""
     result = []
+    selected = normalize_directions(direction)
     for item in departures:
         event_start = instant(item.scheduled)
         event_end = event_start + timedelta(minutes=1)
-        if item.direction != direction or item.canceled:
+        if item.direction not in selected or item.canceled:
             continue
         if event_end <= instant(start) or event_start >= instant(end):
             continue

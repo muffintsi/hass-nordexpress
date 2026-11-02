@@ -16,10 +16,10 @@
         }
       },
       "direction": {
-        "title": "Destination",
-        "description": "Choose the exact destination. Route variants have separate schedules.",
+        "title": "Destinations",
+        "description": "Select one or more destinations. Their departures share one sensor and calendar.",
         "data": {
-          "direction": "Destination"
+          "directions": "Destinations"
         }
       }
     },
@@ -38,12 +38,16 @@
       "init": {
         "title": "Timetable settings",
         "data": {
-          "calendar_days": "Days in calendar"
+          "calendar_days": "Days in calendar",
+          "directions": "Destinations"
         }
       }
     },
     "error": {
-      "invalid_calendar_days": "Enter a whole number from 1 to 14."
+      "invalid_calendar_days": "Enter a whole number from 1 to 14.",
+      "invalid_selection": "Select at least one destination from the list.",
+      "already_configured": "This combination of destinations is already configured for this stop and line.",
+      "cannot_connect": "Cannot fetch Nord Express data. Please retry."
     }
   },
   "entity": {

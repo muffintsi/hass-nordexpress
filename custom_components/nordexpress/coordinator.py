@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import NordExpressApi, NordExpressError
 from .const import HORIZON_DAYS, POLL_SECONDS, validate_calendar_days
-from .model import WARSAW, instant, merge_live, timetable, upcoming
+from .model import WARSAW, configured_directions, instant, merge_live, timetable, upcoming
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +25,12 @@ class NordExpressCoordinator(DataUpdateCoordinator):
             config_entry=entry,
         )
         self.api = api
-        self.config = entry.data
+        selected = configured_directions(entry.data, entry.options)
+        self.config = {
+            **entry.data,
+            "directions": list(selected),
+            "direction": " / ".join(selected),
+        }
         self.calendar_days = validate_calendar_days(
             entry.options.get("calendar_days", HORIZON_DAYS)
         )
@@ -52,7 +57,7 @@ class NordExpressCoordinator(DataUpdateCoordinator):
         except (NordExpressError, KeyError, TypeError, ValueError, OverflowError) as error:
             LOGGER.debug("Using timetable without real-time data: %s", error)
 
-        direction = self.config["direction"]
+        direction = self.config["directions"]
         return {
             "departures": departures,
             "realtime_available": live_available,
@@ -63,7 +68,7 @@ class NordExpressCoordinator(DataUpdateCoordinator):
                 item.as_dict()
                 for item in departures
                 if item.canceled
-                and item.direction == direction
+                and item.direction in direction
                 and instant(item.when) >= instant(now)
             ],
             "upcoming": upcoming(departures, direction, now),

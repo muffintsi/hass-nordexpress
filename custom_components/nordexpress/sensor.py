@@ -37,7 +37,7 @@ class NordExpressSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.unique_id}_{key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.unique_id)},
-            "name": entry.title,
+            "name": f"{self.coordinator.config['stop_name']} · {entry.data['line']} → {self.coordinator.config['direction']}",
             "manufacturer": "Nord Express / kiedyPrzyjedzie.pl",
             "entry_type": DeviceEntryType.SERVICE,
             "configuration_url": f"{BASE_URL}/#/stops/{entry.data['stop_id']}/departures",
@@ -51,7 +51,7 @@ class NordExpressSensor(CoordinatorEntity, SensorEntity):
             self._attr_has_entity_name = False
             self._attr_name = (
                 f"Linia {entry.data['line']} - {entry.data['stop_name']}"
-                f" → {entry.data['direction']} (Nord Express)"
+                f" → {self.coordinator.config['direction']} (Nord Express)"
             )
             self._attr_icon = "mdi:bus"
 
@@ -74,7 +74,7 @@ class NordExpressSensor(CoordinatorEntity, SensorEntity):
             return []
         return upcoming(
             self.coordinator.data["departures"],
-            self.coordinator.config["direction"],
+            self.coordinator.config["directions"],
             datetime.now(WARSAW),
         )
 
@@ -98,6 +98,7 @@ class NordExpressSensor(CoordinatorEntity, SensorEntity):
             "stop_id": self.coordinator.config["stop_id"],
             "line": self.coordinator.config["line"],
             "direction": self.coordinator.config["direction"],
+            "directions": self.coordinator.config["directions"],
             "realtime_available": data.get("realtime_available", False),
             "horizon_end": data.get("horizon_end"),
         }

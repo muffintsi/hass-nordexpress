@@ -18,7 +18,7 @@ async def test_config_flow(hass, api):
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"line": "105"})
     assert result["step_id"] == "direction"
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"direction": "Słupsk"}
+        result["flow_id"], {"directions": ["Słupsk"]}
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"]["stop_code"] == "51"
@@ -34,7 +34,7 @@ async def test_duplicate_relation(hass, api, entry):
     )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"line": "105"})
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"direction": "Słupsk"}
+        result["flow_id"], {"directions": ["Słupsk"]}
     )
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"

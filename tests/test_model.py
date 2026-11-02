@@ -5,7 +5,16 @@ from pathlib import Path
 
 import load_modules  # noqa: F401
 from nordexpress_test.const import validate_calendar_days
-from nordexpress_test.model import WARSAW, display_instant, instant, merge_live, timetable, upcoming
+from nordexpress_test.model import (
+    WARSAW,
+    configured_directions,
+    display_instant,
+    instant,
+    merge_live,
+    normalize_directions,
+    timetable,
+    upcoming,
+)
 from nordexpress_test.presentation import calendar_records, zim_attributes
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -39,6 +48,45 @@ def live(reference, **kwargs):
 
 
 class ModelTests(unittest.TestCase):
+    def test_multiple_directions_are_sorted_together(self):
+        day = date(2026, 11, 2)
+        data = timetable(payload(36000), day, "105")
+        data += timetable(payload(36600, symbols="A", trip=2), day, "105")
+        data += timetable(payload(37200, trip=3), day, "105")
+        selected = upcoming(data, ["Słupsk", "Cecenowo"], datetime(2026, 11, 2, 9, tzinfo=WARSAW))
+        self.assertEqual([item.trip_id for item in selected], [1, 2, 3])
+        attrs = zim_attributes(selected, {"line": "105", "stop_name": "Test"})
+        self.assertEqual(attrs["Direction"], "Słupsk")
+        self.assertEqual(attrs["NextBusDirection"], "Cecenowo")
+
+    def test_multiple_calendar_directions_keep_individual_titles(self):
+        now = datetime(2026, 11, 2, 9, tzinfo=WARSAW)
+        data = timetable(payload(36000), now.date(), "105")
+        data += timetable(payload(36600, symbols="A", trip=2), now.date(), "105")
+        records = calendar_records(data, ["Słupsk", "Cecenowo"], now, now + timedelta(days=1))
+        self.assertEqual(
+            [row["summary"] for row in records], ["Linia 105 → Słupsk", "Linia 105 → Cecenowo"]
+        )
+
+    def test_legacy_single_direction_configuration(self):
+        self.assertEqual(configured_directions({"direction": "Słupsk"}), ("Słupsk",))
+
+    def test_options_override_original_directions(self):
+        self.assertEqual(
+            configured_directions({"direction": "Słupsk"}, {"directions": ["Słupsk", "Cecenowo"]}),
+            ("Cecenowo", "Słupsk"),
+        )
+
+    def test_direction_selection_order_and_duplicates(self):
+        self.assertEqual(
+            normalize_directions(["Słupsk", "Cecenowo", "Słupsk"]), ("Cecenowo", "Słupsk")
+        )
+
+    def test_empty_direction_selection_rejected(self):
+        for value in ([], [""], None, [1]):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                normalize_directions(value)
+
     def setUp(self):
         self.day = date(2026, 11, 2)
         self.now = datetime(2026, 11, 2, 10, tzinfo=WARSAW)

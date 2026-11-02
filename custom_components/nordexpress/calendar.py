@@ -23,7 +23,7 @@ class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
         self._attr_unique_id = f"{entry.unique_id}_calendar"
         self._attr_name = (
             f"Linia {entry.data['line']} - {entry.data['stop_name']}"
-            f" → {entry.data['direction']} (Nord Express)"
+            f" → {self.coordinator.config['direction']} (Nord Express)"
         )
         self._attr_extra_state_attributes = {
             "calendar_days": self.coordinator.calendar_days,
@@ -32,7 +32,8 @@ class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
             "longitude": entry.data.get("longitude"),
             "stop_name": entry.data["stop_name"],
             "stop_code": entry.data.get("stop_code"),
-            "direction": entry.data["direction"],
+            "direction": self.coordinator.config["direction"],
+            "directions": self.coordinator.config["directions"],
         }
 
     async def async_added_to_hass(self):
@@ -55,7 +56,7 @@ class NordExpressCalendar(CoordinatorEntity, CalendarEntity):
         if start >= end:
             return []
         return calendar_records(
-            data.get("departures", []), self.coordinator.config["direction"], start, end
+            data.get("departures", []), self.coordinator.config["directions"], start, end
         )
 
     @property

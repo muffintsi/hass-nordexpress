@@ -15,6 +15,24 @@ from zoneinfo import ZoneInfo
 WARSAW = ZoneInfo("Europe/Warsaw")
 
 
+def normalize_directions(value) -> tuple[str, ...]:
+    """Keep deterministic, nonempty selections; accept legacy single destinations."""
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ValueError("Select at least one destination")
+    if any(not isinstance(item, str) or not item.strip() for item in value):
+        raise ValueError("Invalid destination")
+    return tuple(sorted(set(value)))
+
+
+def configured_directions(config, options=None) -> tuple[str, ...]:
+    options = options or {}
+    return normalize_directions(
+        options.get("directions", config.get("directions", config.get("direction")))
+    )
+
+
 def instant(value: datetime) -> datetime:
     """Use UTC for ordering (including repeated hours during DST)."""
     return value.astimezone(timezone.utc)
@@ -154,13 +172,16 @@ def merge_live(departures: list[Departure], payload: dict, now: datetime) -> lis
     return sorted(result, key=lambda item: instant(item.when))
 
 
-def upcoming(departures: list[Departure], direction: str, now: datetime) -> list[Departure]:
+def upcoming(
+    departures: list[Departure], direction: str | list | tuple, now: datetime
+) -> list[Departure]:
     """Retain imminent live rows until the next poll; exclude canceled trips."""
+    selected = normalize_directions(direction)
     return sorted(
         [
             item
             for item in departures
-            if item.direction == direction
+            if item.direction in selected
             and not item.canceled
             and (
                 instant(item.when) >= instant(now)

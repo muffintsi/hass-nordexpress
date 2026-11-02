@@ -1,3 +1,15 @@
+# Walidacja 0.2.0 — 2026-11-02
+
+- 44 testy: OK, w tym wspólne sortowanie kierunków, zachowanie nazw kierunków
+  w atrybutach ZIM i kalendarzu, zgodność starej konfiguracji i nadpisanie
+  kierunków w opcjach, pusty wybór i normalizacja kolejności.
+- Test z klasami Home Assistant 2026.10.4: OK — formularz wielokrotnego wyboru,
+  koordynator, 3 sensory, wspólny kalendarz i opcje istniejącego wpisu.
+- Ruff, formatowanie, kompilacja modułów i składnia JSON: OK.
+- Testy pełnego cyklu życia HA w `tests/ha/test_homeassistant.py` pozostają
+  przeznaczone dla CI na Linuksie; nie uruchomiono ich na docelowym HA.
+- Nie zmieniano konfiguracji działającej instalacji HA.
+
 # Walidacja 0.1.0 — 2026-11-02
 
 - 38 testów klienta API, modelu, kalendarza i kontraktu prezentacji ZIM: OK.
