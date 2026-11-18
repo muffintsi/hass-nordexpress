@@ -1,4 +1,7 @@
 {
   "name": "Nord Express",
-  "homeassistant": "2025.1.0"
+  "country": "PL",
+  "content_in_root": false,
+  "homeassistant": "2025.1.0",
+  "zip_release": false
 }

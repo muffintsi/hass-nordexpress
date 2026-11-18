@@ -1,11 +1,14 @@
 {
   "domain": "nordexpress",
   "name": "Nord Express",
-  "codeowners": [],
+  "codeowners": [
+    "@muffintsi"
+  ],
   "config_flow": true,
-  "documentation": "https://nordexpress.kiedyprzyjedzie.pl/",
+  "documentation": "https://github.com/muffintsi/hass-nordexpress",
   "integration_type": "service",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/muffintsi/hass-nordexpress/issues",
   "requirements": [],
   "version": "0.3.1"
 }
