@@ -14,7 +14,9 @@ def custom_integrations(enable_custom_integrations, monkeypatch):
     # The HA harness also ships a custom_components package. Include this
     # checkout explicitly so both direct imports and HA discovery find it.
     component_path = str(Path(__file__).resolve().parents[2] / "custom_components")
-    monkeypatch.setattr(custom_components, "__path__", [component_path, *custom_components.__path__])
+    monkeypatch.setattr(
+        custom_components, "__path__", [component_path, *custom_components.__path__]
+    )
     yield
 
 
