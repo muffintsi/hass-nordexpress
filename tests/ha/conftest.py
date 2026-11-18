@@ -1,13 +1,20 @@
 """Real Home Assistant fixtures (Linux CI)."""
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def custom_integrations(enable_custom_integrations):
+def custom_integrations(enable_custom_integrations, monkeypatch):
+    import custom_components
+
+    # The HA harness also ships a custom_components package. Include this
+    # checkout explicitly so both direct imports and HA discovery find it.
+    component_path = str(Path(__file__).resolve().parents[2] / "custom_components")
+    monkeypatch.setattr(custom_components, "__path__", [component_path, *custom_components.__path__])
     yield
 
 

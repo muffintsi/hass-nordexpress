@@ -1,6 +1,9 @@
 {
   "domain": "nordexpress",
   "name": "Nord Express",
+  "categories": [
+    "vehicles_transport.public_transport"
+  ],
   "codeowners": [
     "@muffintsi"
   ],

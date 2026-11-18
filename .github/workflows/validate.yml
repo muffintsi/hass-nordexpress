@@ -19,6 +19,6 @@ jobs:
   hassfest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate Home Assistant integration
         uses: home-assistant/actions/hassfest@master
